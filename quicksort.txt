@@ -1,0 +1,14 @@
+
+function QUICKSORT(array, start, end)
+    if (start >= end) return;
+
+    const pivot = array[start];
+    const middle = start;
+    for (let i = start + 1; i < end, i++) {
+        if (array[i] <= pivot) {
+            swap(array[middle++], array[i]);
+        }
+    }
+    swap(array[start], array[middle]);
+    QUICKSORT(array, start, middle);
+    QUICKSORT(array, middle + 1, end);
