@@ -13,7 +13,7 @@ EXE_FAST = $(BUILD)/qs_fast.o
 EXE_DEBUG = $(BUILD)/qs_debug.o
 ASM = qs.s
 
-.PHONY: all clean diff dir run submission
+.PHONY: all clean dir run submission
 
 run: $(EXE_FAST)
 	mpirun -np $(PROCESSORS) $(HOSTFILE) ./$(EXE_FAST) $(PARAMS)
@@ -37,7 +37,3 @@ dir:
 
 clean:
 	rm -rf $(BUILD) $(ZIP) readme.pdf
-
-diff:
-	diff clusters.txt clusters_correct.txt > clusters_diff.txt
-	diff medoids.txt medoids_correct.txt > medoids_diff.txt
