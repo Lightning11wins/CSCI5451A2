@@ -23,6 +23,11 @@
 #define terminate() MPI_Finalize(); return 0;
 #define end() stop_timer(); print_timer(); terminate();
 
+#define swap(i, j)           \
+    int temp = numbers[i];   \
+    numbers[i] = numbers[j]; \
+    numbers[j] = temp;
+
 // Integer comparison functin for using qsort().
 int compare(const void *a, const void *b) {
     return (*(int *)a - *(int *)b);

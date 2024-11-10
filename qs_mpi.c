@@ -19,8 +19,7 @@ int main(int argc, char** argv) {
     int num_my_numbers = num_total_numbers / num_processors;
 
     if (num_total_numbers % num_processors != 0) {
-        printf("Warning: N (%d) is not devisible by the number of processors (%d).\n", num_total_numbers, num_processors);
-        fflush(stdout);
+        fprintf(stderr, "Warning: N (%d) is not devisible by the number of processors (%d).\n", num_total_numbers, num_processors);
     }
 
     // Generate random numbers to sort.
@@ -40,7 +39,16 @@ int main(int argc, char** argv) {
     int pivot = median(pivots, num_processors);
     printf("Process %d: Pivot is %d.\n", my_rank, pivot);
 
-    // Partition
+    // Partition data around the pivot.
+    int i = 0;
+    for (int j = 0; j < length; j++) {
+        if (numbers[j] < pivot) {
+            swap(i, j);
+            i++;
+        }
+    }
+    int pivot_index = i + 1;
+    swap(j, i + 1);
 
     terminate();
 }
