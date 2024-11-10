@@ -1,4 +1,4 @@
-#include "quicksort.h"
+#include "qs_mpi.h"
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
@@ -24,8 +24,8 @@ int main(int argc, char** argv) {
     }
 
     // Generate random numbers to sort.
-    srand(my_rank);
-    int numbers[N] = {0};
+    srand(my_rank + 1);
+    int numbers[num_my_numbers];
     for (int i = 0; i < num_my_numbers; i++) {
         numbers[i] = rand();
     }
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     printf("Process %d: Picked pivot numbers[%d] = %d.\n", my_rank, my_index, my_pivot);
 
     // Gather all pivots.
-    int pivots[num_processors] = {0};
+    int pivots[num_processors];
     MPI_Allgather(&my_pivot, 1, MPI_INT, pivots, 1, MPI_INT, MPI_COMM_WORLD);
 
     // Pick the pivot.
@@ -42,5 +42,5 @@ int main(int argc, char** argv) {
 
     // Partition
 
-    end();
+    terminate();
 }

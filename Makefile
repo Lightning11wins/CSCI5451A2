@@ -1,6 +1,6 @@
 N = 1000000
 PARAMS = $(N)
-PROCESSORS = 256 # Max: 1772
+PROCESSORS = 4 # Max: 1772
 
 CC = mpicc
 SRC = qs_mpi.c
@@ -33,7 +33,7 @@ $(ZIP): clean
 	tar --exclude='.gitignore' --exclude='$(BUILD)' -czvf $(ZIP) *
 
 dir:
-	mkdir $(BUILD)
+	mkdir -p $(BUILD)
 
 clean:
 	rm -rf $(BUILD) $(ZIP) readme.pdf
