@@ -2,6 +2,7 @@
 #define CLUSTER_H_
 #include <math.h>
 #include <mpi.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,18 +27,18 @@
 #define end() stop_timer(); print_timer(); terminate();
 
 #define swap(arr, i, j) \
-    int temp = arr[i];  \
+    unsigned int temp = arr[i];  \
     arr[i] = arr[j];    \
     arr[j] = temp;
 
 // Integer comparison functin for using qsort().
 int compare(const void *a, const void *b) {
-    return (*(int *)a - *(int *)b);
+    return (*(unsigned int *)a - *(unsigned int *)b);
 }
 
 // Helper function to find medians.
-static inline int median(int nums[], int len) {
-    qsort(nums, len, sizeof(int), compare);
+static inline unsigned int median(unsigned int* nums, int len) {
+    qsort(nums, len, sizeof(unsigned int), compare);
     return (len % 2 == 1) ? nums[len / 2] : (nums[len / 2 - 1] + nums[len / 2]) / 2;
 }
 
@@ -47,7 +48,7 @@ void stringify_array(int* arr, int n, char *buffer) {
     for (int i = 0; i < n; i++) {
         offset += sprintf(buffer + offset, "%d, ", arr[i]);
     }
-    sprintf(buffer, "]");
+    sprintf(buffer + offset, "]");
 }
 
 /**
@@ -57,7 +58,7 @@ void stringify_array(int* arr, int n, char *buffer) {
 * @param numbers The array of numbers.
 * @param num_numbers How many numbers to write.
 */
-static inline void print_numbers(char const* const filename, int const* const numbers, int const num_numbers) {
+static inline void print_numbers(char const* const filename, unsigned int const* const numbers, int const num_numbers) {
     FILE * fout;
 
     // Open the file.
@@ -76,7 +77,6 @@ static inline void print_numbers(char const* const filename, int const* const nu
 
     fclose(fout);
 }
-// TODO: Change int to uint32_t
 
 /**
 * @brief Return the number of seconds since an unspecified time (e.g., Unix

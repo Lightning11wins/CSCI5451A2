@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
     // Generate random numbers to sort.
     srand(my_rank + 1);
-    int* my_numbers = malloc(num_my_numbers * sizeof(int));
+    unsigned int* my_numbers = malloc(num_my_numbers * sizeof(unsigned int));
     for (int i = 0; i < num_my_numbers; i++) {
         my_numbers[i] = rand();
     }
@@ -39,16 +39,19 @@ int main(int argc, char** argv) {
     // Begin partitioning in parallel.
     while (num_processors > 1) {
         // Select a random pivot.
-        int my_index = rand() % num_my_numbers, my_pivot = my_numbers[my_index];
+        int my_index = rand() % num_my_numbers;
+        unsigned int my_pivot = my_numbers[my_index];
         printf("Process %d: Picked pivot my_numbers[%d] = %d.\n", my_rank, my_index, my_pivot);
+        fflush(stdout);
 
         // Gather all pivots in the data.
-        int pivots[num_processors];
-        MPI_Allgather(&my_pivot, 1, MPI_INT, pivots, 1, MPI_INT, comm);
+        unsigned int pivots[num_processors];
+        MPI_Allgather(&my_pivot, 1, MPI_UNSIGNED, pivots, 1, MPI_UNSIGNED, comm);
 
         // Pick the pivot.
-        int pivot = median(pivots, num_processors);
+        unsigned int pivot = median(pivots, num_processors);
         printf("Process %d: Pivot is %d.\n", my_rank, pivot);
+        fflush(stdout);
 
         // Partition data around the pivot.
         // Contract: Numbers before i are smaller than the pivot.
@@ -84,10 +87,11 @@ int main(int argc, char** argv) {
         char buff[1024] = {0};
         stringify_array(data_sent_per_processor, num_processors, buff);
         printf("Process %d: Sending data to others: %s.\n", my_rank, buff);
+        fflush(stdout);
 
         // Comunicate the amount of data each processor will send.
         int data_recv_per_processor[num_processors];
-        MPI_Alltoall(data_sent_per_processor, 1, MPI_INT, data_recv_per_processor, 1, MPI_INT, comm);
+        MPI_Alltoall(data_sent_per_processor, 1, MPI_UNSIGNED, data_recv_per_processor, 1, MPI_UNSIGNED, comm);
 
         // Calculate displacements.
         int data_recv_displacements[num_processors];
@@ -103,10 +107,10 @@ int main(int argc, char** argv) {
         // Note: data_sent_per_processor is the data this processor sends to each other processor.
         // Note: data_sent_per_processor is the data this processor recieves from each other processor.
         // Note: The fact that I have to make these notes means I need to use better variable names in the furture.
-        int* new_numbers = malloc(num_my_numbers * sizeof(int));
+        unsigned int* new_numbers = malloc(num_my_numbers * sizeof(unsigned int));
         MPI_Alltoallv(
-            my_numbers, data_sent_per_processor, data_sent_displacements, MPI_INT,
-            new_numbers, data_recv_per_processor, data_recv_displacements, MPI_INT,
+            my_numbers, data_sent_per_processor, data_sent_displacements, MPI_UNSIGNED,
+            new_numbers, data_recv_per_processor, data_recv_displacements, MPI_UNSIGNED,
             comm
         );
 
@@ -129,7 +133,7 @@ int main(int argc, char** argv) {
     }
 
     // Sort the data.
-    qsort(my_numbers, num_my_numbers, sizeof(int), compare);
+    qsort(my_numbers, num_my_numbers, sizeof(unsigned int), compare);
     printf("Finished sorting %d numbers.\n", num_my_numbers);
 
     // Refresh the world communicator to include everyone again.
@@ -137,7 +141,7 @@ int main(int argc, char** argv) {
 
     // Determine how many my_numbers to gather.
     int num_recv_numbers[num_processors];
-    MPI_Gather(&num_my_numbers, 1, MPI_INT, num_recv_numbers, 1, MPI_INT, gatherer_rank, comm);
+    MPI_Gather(&num_my_numbers, 1, MPI_UNSIGNED, num_recv_numbers, 1, MPI_UNSIGNED, gatherer_rank, comm);
 
     // Make space for the sorted data.
     int num_actual_numbers = 0;
@@ -148,13 +152,13 @@ int main(int argc, char** argv) {
         }
         printf("Total numbers to gather: %d.\n", num_actual_numbers);
     }
-    int sorted_numbers[num_actual_numbers];
-    memset(sorted_numbers, 0, num_my_numbers * sizeof(int));
+    unsigned int sorted_numbers[num_actual_numbers];
+    memset(sorted_numbers, 0, num_my_numbers * sizeof(unsigned int));
 
     // Gather the data.
     MPI_Gather(
-        my_numbers, num_my_numbers, MPI_INT,
-        sorted_numbers, num_actual_numbers, MPI_INT,
+        my_numbers, num_my_numbers, MPI_UNSIGNED,
+        sorted_numbers, num_actual_numbers, MPI_UNSIGNED,
         gatherer_rank, MPI_COMM_WORLD
     );
     
