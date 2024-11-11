@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
     // Generate random numbers to sort.
     srand(my_rank + 1);
-    unsigned int* my_numbers = malloc(num_my_numbers * sizeof(unsigned int));
+    unsigned int* my_numbers = (unsigned int*) malloc(num_my_numbers * sizeof(unsigned int));
     for (int i = 0; i < num_my_numbers; i++) {
         my_numbers[i] = rand();
     }
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
         // Select a random pivot.
         int my_index = rand() % num_my_numbers;
         unsigned int my_pivot = my_numbers[my_index];
-        printf("Process %d: Picked pivot my_numbers[%d] = %d.\n", my_rank, my_index, my_pivot);
+        printf("Process %d: Picked my pivot my_numbers[%d] = %d.\n", my_rank, my_index, my_pivot);
         fflush(stdout);
 
         // Gather all pivots in the data.
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
         // Pick the pivot.
         unsigned int pivot = median(pivots, num_processors);
-        printf("Process %d: Pivot is %d.\n", my_rank, pivot);
+        printf("Process %d: Global pivot is %d.\n", my_rank, pivot);
         fflush(stdout);
 
         // Partition data around the pivot.
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
         // Note: data_sent_per_processor is the data this processor sends to each other processor.
         // Note: data_sent_per_processor is the data this processor recieves from each other processor.
         // Note: The fact that I have to make these notes means I need to use better variable names in the furture.
-        unsigned int* new_numbers = malloc(num_my_numbers * sizeof(unsigned int));
+        unsigned int* new_numbers = (unsigned int*) malloc(num_my_numbers * sizeof(unsigned int));
         MPI_Alltoallv(
             my_numbers, data_sent_per_processor, data_sent_displacements, MPI_UNSIGNED,
             new_numbers, data_recv_per_processor, data_recv_displacements, MPI_UNSIGNED,
@@ -138,39 +138,63 @@ int main(int argc, char** argv) {
 
     // Refresh the world communicator to include everyone again.
     MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+    MPI_Comm_size(comm, &num_processors);
 
     // Determine how many my_numbers to gather.
     int num_recv_numbers[num_processors];
-    MPI_Gather(&num_my_numbers, 1, MPI_UNSIGNED, num_recv_numbers, 1, MPI_UNSIGNED, gatherer_rank, comm);
+    memset(num_recv_numbers, 0, num_processors * sizeof(int));
+    // MPI_Gather(&num_my_numbers, 1, MPI_INT, num_recv_numbers, 1, MPI_INT, gatherer_rank, comm);
+    MPI_Allgather(&num_my_numbers, 1, MPI_INT, num_recv_numbers, 1, MPI_INT, comm);
 
-    // Make space for the sorted data.
+    // Calculate space for the sorted data.
     int num_actual_numbers = 0;
-    if (my_rank == gatherer_rank) {
-        for (int i = 0; i < num_processors; i++) {
-            num_actual_numbers += num_recv_numbers[i];
-            printf("Gathering %d sorted numbers from %d.\n", num_recv_numbers[i], i);
-        }
-        printf("Total numbers to gather: %d.\n", num_actual_numbers);
+    for (int i = 0; i < num_processors; i++) {
+        num_actual_numbers += num_recv_numbers[i];
+        printf("Process %d: Gathering %d sorted numbers from %d.\n", my_rank, num_recv_numbers[i], i);
     }
-    unsigned int sorted_numbers[num_actual_numbers];
-    memset(sorted_numbers, 0, num_my_numbers * sizeof(unsigned int));
+    printf("Process %d: Total numbers to gather: %d.\n", my_rank, num_actual_numbers);
+
+    // Allocate space for the sorted.
+    unsigned int* all_numbers = (unsigned int*) calloc(num_actual_numbers, sizeof(unsigned int));
+    if (all_numbers == NULL) {
+        perror("Memory allocation failed");
+        terminate();
+    }
+
+    // Calculate displacements.
+    int recv_displacements[num_processors];
+    for (int displacement = 0, p = 0; p < num_processors; p++) {
+        recv_displacements[p] = displacement;
+        displacement += num_recv_numbers[p];
+    }
+
+    char num_recv_numbers_buff[1024] = {0}, recv_displacements_buff[1024] = {0};
+    stringify_array(num_recv_numbers, num_processors, num_recv_numbers_buff);
+    stringify_array(recv_displacements, num_processors, recv_displacements_buff);
+    printf("Process %d: Sending data x%s with displacements of %s.\n",
+        my_rank, num_recv_numbers_buff, recv_displacements_buff);
+    fflush(stdout);
 
     // Gather the data.
-    MPI_Gather(
+    MPI_Gatherv(
         my_numbers, num_my_numbers, MPI_UNSIGNED,
-        sorted_numbers, num_actual_numbers, MPI_UNSIGNED,
-        gatherer_rank, MPI_COMM_WORLD
+        all_numbers, num_recv_numbers, recv_displacements, MPI_UNSIGNED,
+        gatherer_rank, comm
     );
-    
+
+    // Algorithm is done, that's time!
+    stop_timer();
+    print_timer();
+
     // Free each process's my_numbers.
     free(my_numbers);
     
     // Output the data.
     if (my_rank == gatherer_rank) {
         printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
-        print_numbers("output.txt", sorted_numbers, num_total_numbers);
+        print_numbers("output.txt", all_numbers, num_total_numbers);
     }
 
     // Stop and print the timer, then end and clean up the program.
-    end();
+    terminate();
 }

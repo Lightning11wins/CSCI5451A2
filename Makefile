@@ -1,6 +1,6 @@
 N = 1000000
 PARAMS = $(N)
-PROCESSORS = 4 # Max: 1772
+PROCESSORS = 2 # Max: 1772
 
 CC = mpicc
 SRC = qs_mpi.c
@@ -17,6 +17,10 @@ ASM = qs.s
 
 run: $(EXE_FAST)
 	mpirun -np $(PROCESSORS) $(HOSTFILE) ./$(EXE_FAST) $(PARAMS)
+
+test: 
+	gcc -O3 -Wall verify.c -o $(BUILD)/verify.o
+	./$(BUILD)/verify.o
 
 build: $(EXE_FAST)
 
@@ -36,4 +40,4 @@ dir:
 	mkdir -p $(BUILD)
 
 clean:
-	rm -rf $(BUILD) $(ZIP) readme.pdf
+	rm -rf $(BUILD) $(ZIP) readme.pdf output.txt
