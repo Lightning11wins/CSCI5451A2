@@ -1,15 +1,10 @@
 #include "qs_mpi.h"
 
-int* parallel_partition(int* numbers_ptr, int* num_my_numbers_ptr, int num_processors, int my_rank, MPI_comm* comm_ptr) {
-    
-    return new_numbers;
-}
-
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
     // Get a fresh comunicator for our process.
-    MPI_comm comm;
+    MPI_Comm comm;
     MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 
     // Get values from MPI.
@@ -33,7 +28,7 @@ int main(int argc, char** argv) {
 
     // Generate random numbers to sort.
     srand(my_rank + 1);
-    int* my_numbers = malloc(num_my_numbers * size_of(int));
+    int* my_numbers = malloc(num_my_numbers * sizeof(int));
     for (int i = 0; i < num_my_numbers; i++) {
         my_numbers[i] = rand();
     }
@@ -63,7 +58,7 @@ int main(int argc, char** argv) {
         int i = 0; // Smaller section contains no elements yet.
         for (int j = 0; j < num_my_numbers; j++) {
             if (my_numbers[j] < pivot) {
-                swap(i, j);
+                swap(my_numbers, i, j);
                 i++;
             }
         }
@@ -71,8 +66,8 @@ int main(int argc, char** argv) {
         // Determine how many my_numbers will be sent where.
         int half_num_processors = num_processors / 2,
             small_numbers_per_processor = i / half_num_processors,
-            large_numbers_per_processor = (num_my_numbers - i) / half_num_processors
-            data_sent_per_processor[num_processors], p
+            large_numbers_per_processor = (num_my_numbers - i) / half_num_processors,
+            data_sent_per_processor[num_processors], p = 0,
             data_sent_displacements[num_processors], displacement = 0;
         for (; p < half_num_processors; p++) {
             data_sent_per_processor[p] = small_numbers_per_processor;
@@ -80,7 +75,7 @@ int main(int argc, char** argv) {
             displacement += small_numbers_per_processor;
         }
         for (; p < num_processors; p++) {
-            data_sent_per_processor[p] = ylarge_numbers_per_processor;
+            data_sent_per_processor[p] = large_numbers_per_processor;
             data_sent_displacements[p] = displacement;
             displacement += large_numbers_per_processor;
         }
@@ -102,13 +97,13 @@ int main(int argc, char** argv) {
         }
 
         // Displacement is the amount of data we will recv.
-        *num_my_numbers_ptr = num_my_numbers = displacement;
+        num_my_numbers = displacement;
 
         // Transfer the data.
         // Note: data_sent_per_processor is the data this processor sends to each other processor.
         // Note: data_sent_per_processor is the data this processor recieves from each other processor.
         // Note: The fact that I have to make these notes means I need to use better variable names in the furture.
-        int* new_numbers = malloc(num_my_numbers * size_of(int));
+        int* new_numbers = malloc(num_my_numbers * sizeof(int));
         MPI_Alltoallv(
             my_numbers, data_sent_per_processor, data_sent_displacements, MPI_INT,
             new_numbers, data_recv_per_processor, data_recv_displacements, MPI_INT,
@@ -126,8 +121,8 @@ int main(int argc, char** argv) {
 
         // Divide the processors in half.
         // color = 0: smaller partition, color = 1: larger partition
-        int color = (rank < num_processors / 2) ? 0 : 1;
-        MPI_Comm_split(comm, color, rank, comm_ptr);
+        int color = (my_rank < num_processors / 2) ? 0 : 1;
+        MPI_Comm_split(comm, color, my_rank, &comm);
 
         // Update the size of this processor group.
         MPI_Comm_size(comm, &num_processors);
@@ -149,7 +144,7 @@ int main(int argc, char** argv) {
     if (my_rank == gatherer_rank) {
         for (int i = 0; i < num_processors; i++) {
             num_actual_numbers += num_recv_numbers[i];
-            printf("Gathering %d sorted numbers from %d.\n", num_recv_numbers, i);
+            printf("Gathering %d sorted numbers from %d.\n", num_recv_numbers[i], i);
         }
         printf("Total numbers to gather: %d.\n", num_actual_numbers);
     }
@@ -168,7 +163,7 @@ int main(int argc, char** argv) {
     
     // Output the data.
     if (my_rank == gatherer_rank) {
-        printf("Writing sorted numbers to disk.\n", num_actual_numbers);
+        printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
         print_numbers("output.txt", sorted_numbers, num_total_numbers);
     }
 

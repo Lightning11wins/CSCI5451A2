@@ -13,7 +13,7 @@
     #include <mach/mach_time.h>
 #endif
 
-#define gatherer_rank 0;
+#define gatherer_rank 0
 
 #define parse_int(str) ((int) strtol((str), (char**) NULL, 10))
 #define start_timer() const double start_time = MPI_Wtime()
@@ -25,10 +25,10 @@
 #define terminate() MPI_Finalize(); return 0;
 #define end() stop_timer(); print_timer(); terminate();
 
-#define swap(i, j)           \
-    int temp = numbers[i];   \
-    numbers[i] = numbers[j]; \
-    numbers[j] = temp;
+#define swap(arr, i, j) \
+    int temp = arr[i];  \
+    arr[i] = arr[j];    \
+    arr[j] = temp;
 
 // Integer comparison functin for using qsort().
 int compare(const void *a, const void *b) {
@@ -43,11 +43,11 @@ static inline int median(int nums[], int len) {
 
 // Make arrays into char* for debugging.
 void stringify_array(int* arr, int n, char *buffer) {
-    int offset = sprintf(buffer, '[');
+    int offset = sprintf(buffer, "[");
     for (int i = 0; i < n; i++) {
         offset += sprintf(buffer + offset, "%d, ", arr[i]);
     }
-    sprintf(buffer, ']');
+    sprintf(buffer, "]");
 }
 
 /**
