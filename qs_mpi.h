@@ -13,6 +13,8 @@
     #include <mach/mach_time.h>
 #endif
 
+#define gatherer_rank 0;
+
 #define parse_int(str) ((int) strtol((str), (char**) NULL, 10))
 #define start_timer() const double start_time = MPI_Wtime()
 #define stop_timer() const double stop_time = MPI_Wtime()
@@ -38,6 +40,43 @@ static inline int median(int nums[], int len) {
     qsort(nums, len, sizeof(int), compare);
     return (len % 2 == 1) ? nums[len / 2] : (nums[len / 2 - 1] + nums[len / 2]) / 2;
 }
+
+// Make arrays into char* for debugging.
+void stringify_array(int* arr, int n, char *buffer) {
+    int offset = sprintf(buffer, '[');
+    for (int i = 0; i < n; i++) {
+        offset += sprintf(buffer + offset, "%d, ", arr[i]);
+    }
+    sprintf(buffer, ']');
+}
+
+/**
+* @brief Write an array of integers to a file.
+*
+* @param filename The name of the file to write to.
+* @param numbers The array of numbers.
+* @param num_numbers How many numbers to write.
+*/
+static inline void print_numbers(char const* const filename, int const* const numbers, int const num_numbers) {
+    FILE * fout;
+
+    // Open the file.
+    if ((fout = fopen(filename, "w")) == NULL) {
+        fprintf(stderr, "error opening '%s'\n", filename);
+        abort();
+    }
+
+    // Write the header.
+    fprintf(fout, "%d\n", num_numbers);
+
+    // Write numbers to fout.
+    for (int i = 0; i < num_numbers; ++i) {
+        fprintf(fout, "%d\n", numbers[i]);
+    }
+
+    fclose(fout);
+}
+// TODO: Change int to uint32_t
 
 /**
 * @brief Return the number of seconds since an unspecified time (e.g., Unix
