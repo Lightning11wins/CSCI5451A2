@@ -1,6 +1,6 @@
-N = 1000000
+N = 100000000
 PARAMS = $(N)
-PROCESSORS = 2 # Max: 1772
+PROCESSORS = 1 # Max: 1772
 
 CC = mpicc
 SRC = qs_mpi.c
@@ -13,12 +13,14 @@ EXE_FAST = $(BUILD)/qs_fast.o
 EXE_DEBUG = $(BUILD)/qs_debug.o
 ASM = qs.s
 
-.PHONY: all clean dir run submission
+.PHONY: all clean dir run submission test
+
+test: run verify
 
 run: $(EXE_FAST)
 	mpirun -np $(PROCESSORS) $(HOSTFILE) ./$(EXE_FAST) $(PARAMS)
 
-test: 
+verify:
 	gcc -O3 -Wall verify.c -o $(BUILD)/verify.o
 	./$(BUILD)/verify.o
 

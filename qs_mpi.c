@@ -100,6 +100,14 @@ int main(int argc, char** argv) {
             displacement += data_recv_per_processor[p];
         }
 
+        // Debug logging.
+        char data_recv_per_processor_buff[1024] = {0}, data_recv_displacements_buff[1024] = {0};
+        stringify_array(data_recv_per_processor, num_processors, data_recv_per_processor_buff);
+        stringify_array(data_recv_displacements, num_processors, data_recv_displacements_buff);
+        printf("Process %d: Recieving data x%s with displacements of %s.\n",
+            my_rank, data_recv_per_processor_buff, data_recv_displacements_buff);
+        fflush(stdout);
+
         // Displacement is the amount of data we will recv.
         num_my_numbers = displacement;
 
@@ -114,6 +122,8 @@ int main(int argc, char** argv) {
             comm
         );
 
+        printf("Process %d: Recieved new data!\n", my_rank);
+
         // Continue partitioning with the new numbers.
         free(my_numbers);
         my_numbers = new_numbers;
@@ -125,11 +135,13 @@ int main(int argc, char** argv) {
 
         // Divide the processors in half.
         // color = 0: smaller partition, color = 1: larger partition
-        int color = (my_rank < num_processors / 2) ? 0 : 1;
+        int color = my_rank % num_processors;
         MPI_Comm_split(comm, color, my_rank, &comm);
 
         // Update the size of this processor group.
         MPI_Comm_size(comm, &num_processors);
+        printf("Process %d: New size: %d.\n", my_rank, num_processors);
+        fflush(stdout);
     }
 
     // Sort the data.
@@ -143,8 +155,7 @@ int main(int argc, char** argv) {
     // Determine how many my_numbers to gather.
     int num_recv_numbers[num_processors];
     memset(num_recv_numbers, 0, num_processors * sizeof(int));
-    // MPI_Gather(&num_my_numbers, 1, MPI_INT, num_recv_numbers, 1, MPI_INT, gatherer_rank, comm);
-    MPI_Allgather(&num_my_numbers, 1, MPI_INT, num_recv_numbers, 1, MPI_INT, comm);
+    MPI_Gather(&num_my_numbers, 1, MPI_INT, num_recv_numbers, 1, MPI_INT, gatherer_rank, comm);
 
     // Calculate space for the sorted data.
     int num_actual_numbers = 0;
@@ -168,13 +179,6 @@ int main(int argc, char** argv) {
         displacement += num_recv_numbers[p];
     }
 
-    char num_recv_numbers_buff[1024] = {0}, recv_displacements_buff[1024] = {0};
-    stringify_array(num_recv_numbers, num_processors, num_recv_numbers_buff);
-    stringify_array(recv_displacements, num_processors, recv_displacements_buff);
-    printf("Process %d: Sending data x%s with displacements of %s.\n",
-        my_rank, num_recv_numbers_buff, recv_displacements_buff);
-    fflush(stdout);
-
     // Gather the data.
     MPI_Gatherv(
         my_numbers, num_my_numbers, MPI_UNSIGNED,
@@ -192,7 +196,7 @@ int main(int argc, char** argv) {
     // Output the data.
     if (my_rank == gatherer_rank) {
         printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
-        print_numbers("output.txt", all_numbers, num_total_numbers);
+        print_numbers("../output.txt", all_numbers, num_total_numbers);
     }
 
     // Stop and print the timer, then end and clean up the program.

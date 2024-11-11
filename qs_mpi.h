@@ -21,6 +21,7 @@
 #define stop_timer() const double stop_time = MPI_Wtime()
 #define duration(start_time, stop_time) ((stop_time) - (start_time))
 #define print_timer() print_time(duration(start_time, stop_time))
+#define print_time(seconds) printf("Process %d: Complted after %0.04fs\n", my_rank, seconds)
 
 #define begin() MPI_Init(&argc, &argv); start_timer();
 #define terminate() MPI_Finalize(); return 0;
@@ -101,15 +102,6 @@ static inline double monotonic_seconds() {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec + ts.tv_nsec * 1e-9;
   #endif
-}
-
-/**
-* @brief Output the seconds elapsed while clustering.
-*
-* @param seconds Seconds spent on the algorithm.
-*/
-static inline void print_time(double const seconds) {
-    printf("Process complted after %0.04fs\n", seconds);
 }
 
 // Calculate Euclidean distance between two points.
