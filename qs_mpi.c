@@ -19,11 +19,11 @@ int main(int argc, char** argv) {
     }
     
     // Parse arguments.
-    int num_total_numbers = parse_int(argv[1]);
-    int num_my_numbers = num_total_numbers / num_processors;
+    int target_total_numbers = parse_int(argv[1]);
+    int num_my_numbers = target_total_numbers / num_processors;
 
-    if (num_total_numbers % num_processors != 0) {
-        fprintf(stderr, "Warning: N (%d) is not devisible by the number of processors (%d).\n", num_total_numbers, num_processors);
+    if (target_total_numbers % num_processors != 0) {
+        fprintf(stderr, "Warning: N (%d) is not devisible by the number of processors (%d).\n", target_total_numbers, num_processors);
     }
 
     // Generate random numbers to sort.
@@ -133,10 +133,15 @@ int main(int argc, char** argv) {
         // and will probably create a 50%/50% split (or something close to it) in most situations, so we simply assume 50%/50%.
         // This could lead to load imbalance in rare situations, but it should be faster in the average-case senario.
 
-        // Divide the processors in half.
-        // color = 0: smaller partition, color = 1: larger partition
-        int color = my_rank % num_processors;
-        MPI_Comm_split(comm, color, my_rank, &comm);
+        // Calculate each processor's color to divide them in half.
+        int my_current_rank;
+        MPI_Comm_rank(comm, &my_current_rank);
+        int color = my_current_rank < num_processors / 2;
+
+        // Spit the comunicator.
+        MPI_Comm new_comm;
+        MPI_Comm_split(comm, color, my_rank, &new_comm);
+        comm = new_comm;
 
         // Update the size of this processor group.
         MPI_Comm_size(comm, &num_processors);
@@ -161,9 +166,14 @@ int main(int argc, char** argv) {
     int num_actual_numbers = 0;
     for (int i = 0; i < num_processors; i++) {
         num_actual_numbers += num_recv_numbers[i];
-        printf("Process %d: Gathering %d sorted numbers from %d.\n", my_rank, num_recv_numbers[i], i);
+        
+        if (my_rank == gatherer_rank) {
+            printf("Process %d: Gathering %d sorted numbers from %d.\n", my_rank, num_recv_numbers[i], i);
+        }
     }
-    printf("Process %d: Total numbers to gather: %d.\n", my_rank, num_actual_numbers);
+    if (my_rank == gatherer_rank) {
+        printf("Process %d: Total numbers to gather: %d.\n", my_rank, num_actual_numbers);
+    }
 
     // Allocate space for the sorted.
     unsigned int* all_numbers = (unsigned int*) calloc(num_actual_numbers, sizeof(unsigned int));
@@ -192,11 +202,25 @@ int main(int argc, char** argv) {
 
     // Free each process's my_numbers.
     free(my_numbers);
-    
-    // Output the data.
+
     if (my_rank == gatherer_rank) {
+        // Check that data is sorted.
+        int is_sorted = 1;
+        for (int i = 1; i < num_actual_numbers; i++) {
+            unsigned int previous = all_numbers[i - 1], current = all_numbers[i];
+            if (current < previous) {
+                printf("Fail! %d >= %d is false (%s:%d)\n", current, previous, output_filename, i + 1);
+                is_sorted = 0;
+            }
+            previous = current;
+        }
+        if (is_sorted == 1) {
+            printf("Success! Output data is sorted in ascending order.");
+        }
+        
+        // Output the data.
         printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
-        print_numbers("../output.txt", all_numbers, num_total_numbers);
+        print_numbers(output_filename, all_numbers, num_actual_numbers);
     }
 
     // Stop and print the timer, then end and clean up the program.
