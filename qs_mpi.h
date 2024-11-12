@@ -53,6 +53,24 @@ void stringify_array(int* arr, int n, char *buffer) {
     sprintf(buffer + offset, "]");
 }
 
+// Debug function to find min and max.
+static inline void findMinMax(unsigned int numbers[], size_t size, unsigned int* min, unsigned int* max) {
+    if (size == 0) return;
+
+    *min = numbers[0];
+    *max = numbers[0];
+
+    for (size_t i = 1; i < size; i++) {
+        if (numbers[i] < *min) {
+            *min = numbers[i];
+        }
+        if (numbers[i] > *max) {
+            *max = numbers[i];
+        }
+    }
+}
+
+
 /**
 * @brief Write an array of integers to a file.
 *

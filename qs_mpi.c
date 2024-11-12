@@ -66,6 +66,12 @@ int main(int argc, char** argv) {
             }
         }
 
+        unsigned int min1 = -1, max1 = -1, min2 = -1, max2 = -1, x = 1000000;
+        findMinMax(my_numbers, i, &min1, &max1);
+        findMinMax(my_numbers + i, num_my_numbers - i, &min2, &max2);
+        printf("Process %d: Partitioned into %u..%u < %u..%u.\n", my_rank, min1 / x, max1 / x, min2 / x, max2 / x);
+        fflush(stdout);
+
         // Determine how many my_numbers will be sent where.
         int half_num_processors = num_processors / 2,
             small_numbers_per_processor = i / half_num_processors,
@@ -84,9 +90,11 @@ int main(int argc, char** argv) {
         }
 
         // Logging
-        char buff[1024] = {0};
-        stringify_array(data_sent_per_processor, num_processors, buff);
-        printf("Process %d: Sending data to others: %s.\n", my_rank, buff);
+        char data_sent_per_processor_buff[1024] = {0}, data_sent_displacements_buff[1024] = {0};
+        stringify_array(data_sent_per_processor, num_processors, data_sent_per_processor_buff);
+        stringify_array(data_sent_displacements, num_processors, data_sent_displacements_buff);
+        printf("Process %d: Sending data x%s with displacements %s.\n",
+            my_rank, data_sent_per_processor_buff, data_sent_displacements_buff);
         fflush(stdout);
 
         // Comunicate the amount of data each processor will send.
@@ -104,7 +112,7 @@ int main(int argc, char** argv) {
         char data_recv_per_processor_buff[1024] = {0}, data_recv_displacements_buff[1024] = {0};
         stringify_array(data_recv_per_processor, num_processors, data_recv_per_processor_buff);
         stringify_array(data_recv_displacements, num_processors, data_recv_displacements_buff);
-        printf("Process %d: Recieving data x%s with displacements of %s.\n",
+        printf("Process %d: Recieving data x%s with displacements %s.\n",
             my_rank, data_recv_per_processor_buff, data_recv_displacements_buff);
         fflush(stdout);
 
@@ -122,7 +130,10 @@ int main(int argc, char** argv) {
             comm
         );
 
-        printf("Process %d: Recieved new data!\n", my_rank);
+        unsigned int min = -1, max = -1;
+        findMinMax(new_numbers, num_my_numbers, &min, &max);
+        printf("Process %d: Recieved new data (%u..%u) %d.\n", my_rank, min1 / x, max1 / x, num_my_numbers);
+        fflush(stdout);
 
         // Continue partitioning with the new numbers.
         free(my_numbers);
@@ -140,7 +151,7 @@ int main(int argc, char** argv) {
 
         // Spit the comunicator.
         MPI_Comm new_comm;
-        MPI_Comm_split(comm, color, my_rank, &new_comm);
+        MPI_Comm_split(comm, color, my_current_rank, &new_comm);
         comm = new_comm;
 
         // Update the size of this processor group.
@@ -151,7 +162,10 @@ int main(int argc, char** argv) {
 
     // Sort the data.
     qsort(my_numbers, num_my_numbers, sizeof(unsigned int), compare);
-    printf("Finished sorting %d numbers.\n", num_my_numbers);
+    printf(
+        "Processor %d: Finished sorting %d numbers (%d..%d).\n",
+        my_rank, num_my_numbers, my_numbers[0], my_numbers[num_my_numbers - 1]
+    );
 
     // Refresh the world communicator to include everyone again.
     MPI_Comm_dup(MPI_COMM_WORLD, &comm);
