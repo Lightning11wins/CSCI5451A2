@@ -16,6 +16,7 @@
 
 #define gatherer_rank 0
 #define output_filename "../output.txt"
+#define verify_sorted
 
 #define parse_int(str) ((int) strtol((str), (char**) NULL, 10))
 #define timer_start() const double start_time = MPI_Wtime()

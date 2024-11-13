@@ -193,6 +193,7 @@ int main(int argc, char** argv) {
 
     if (my_rank == gatherer_rank) {
         // Check that data is sorted.
+        #ifdef verify_sorted
         int is_sorted = 1;
         for (int i = 1; i < num_actual_numbers; i++) {
             unsigned int previous = all_numbers[i - 1], current = all_numbers[i];
@@ -205,6 +206,7 @@ int main(int argc, char** argv) {
         if (is_sorted == 1) {
             printf("Success! Output data is sorted in ascending order.\n");
         }
+        #endif
         
         // Output the data.
         printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
