@@ -1,5 +1,6 @@
 #ifndef CLUSTER_H_
 #define CLUSTER_H_
+
 #include <math.h>
 #include <mpi.h>
 #include <stdint.h>
@@ -37,14 +38,8 @@ int compare(const void *a, const void *b) {
     return (*(unsigned int *)a - *(unsigned int *)b);
 }
 
-// Helper function to find medians.
-static inline unsigned int median(unsigned int* nums, int len) {
-    qsort(nums, len, sizeof(unsigned int), compare);
-    return (len % 2 == 1) ? nums[len / 2] : (nums[len / 2 - 1] + nums[len / 2]) / 2;
-}
-
 // Make arrays into char* for debugging.
-void stringify_array(int* arr, int n, char *buffer) {
+static inline void stringify_array(int* arr, int n, char *buffer) {
     int offset = sprintf(buffer, "[");
     for (int i = 0; i < n; i++) {
         offset += sprintf(buffer + offset, "%d, ", arr[i]);
@@ -158,4 +153,5 @@ static inline void check(const int result, const char* functionName) {
         while (1) exit(-1);
     }
 }
+
 #endif

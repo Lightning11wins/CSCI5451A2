@@ -1,4 +1,5 @@
 #include "qs_mpi.h"
+#include "median.h"
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
@@ -44,9 +45,10 @@ int main(int argc, char** argv) {
     // Begin partitioning in parallel.
     while (num_processors > 1) {
         // Select a random pivot.
-        int my_index = rand() % num_my_numbers;
-        unsigned int my_pivot = my_numbers[my_index];
+        // int my_index = rand() % num_my_numbers;
+        // unsigned int my_pivot = my_numbers[my_index];
         // unsigned int my_pivot = median(my_numbers, num_my_numbers);
+        unsigned int my_pivot = fast_median(my_numbers, num_my_numbers);
 
         // Gather all pivots in the data.
         unsigned int pivots[num_processors];
