@@ -15,19 +15,23 @@ To calculate the median, this program uses a helper function from `median.h` cal
 I measured the process which took the longest time to complete sorting *and* partitioning of the data. The load balancing was decent. Improving the sampling size for medians to determine the pivot made it significantly better, however, that also slowed down median calculation. I picked a sample size of `8192` numbers, as mentioned above because it seemed to give the best results.
 
 ### Time in Seconds
-| Size | 1 Processor | 2 Processors | 4 Processors | 8 Processors | 16 Processors |
-|------|-------------|--------------|--------------|--------------|---------------|
-| 1M   | 0.6194s     | 0.3161s      | 0.1906s      | 0.1538s      | 0.1001s       |
-| 10M  | 7.2316s     | 3.6825s      | 1.8815s      | 0.9511s      | 0.7116s       |
-| 100M | 81.8201s    | 42.9335s     | 21.3860s     | 10.9921s     | 5.7401s       |
+| Size | 1 Processor | 2 Processors | 4 Processors | 8 Processors | 16 Processors | 32 Processors | 64 Processors |
+|------|-------------|--------------|--------------|--------------|---------------|---------------|---------------|
+| 1M   | 0.6194s     | 0.3161s      | 0.1906s      | 0.1538s      | 0.1001s       | 0.0679s       | 0.0481s       |
+| 10M  | 7.2316s     | 3.6825s      | 1.8815s      | 0.9511s      | 0.7116s       | 0.4764s       | 0.3164s       |
+| 100M | 81.8201s    | 42.9335s     | 21.3860s     | 10.9921s     | 5.7401s       | 4.0770s       | 2.5147s       |
+| 1B   | 986.7396s   | 548.660s     | 237.7989s    | 117.4499s    | 64.2602s      | 41.9287s      | 24.1742s      |
 
 ### Speedup Compared to 1 Processor
-| Size | 1 Processor | 2 Processors | 4 Processors | 8 Processors | 16 Processors |
-|------|-------------|--------------|--------------|--------------|---------------|
-| 1M   | 1.0000x     | 1.9595x      | 3.2497x      | 4.0273x      | 6.1878x       |
-| 10M  | 1.0000x     | 1.9638x      | 3.8435x      | 7.6034x      | 10.1625x      |
-| 100M | 1.0000x     | 1.9057x      | 3.8259x      | 7.4435x      | 14.2541x      |
+| Size | 1 Processor | 2 Processors | 4 Processors | 8 Processors | 16 Processors | 32 Processors | 64 Processors |
+|------|-------------|--------------|--------------|--------------|---------------|---------------|---------------|
+| 1M   | 1.0000x     | 1.9595x      | 3.2497x      | 4.0273x      | 6.1878x       | 9.1222x       | 12.8773x      | 
+| 10M  | 1.0000x     | 1.9638x      | 3.8435x      | 7.6034x      | 10.1625x      | 15.1797x      | 22.8559x      |
+| 100M | 1.0000x     | 1.9057x      | 3.8259x      | 7.4435x      | 14.2541x      | 20.0687x      | 32.5367x      |
+| 1B   | 1.0000x     | 1.7984x      | 4.1494x      | 8.4017x      | 15.3554x      | 23.5338x      | 40.8179x      |
 
 As you can see, the efficiency of this code really starts to drop off with larger numbers of processors, unless the size of the data is sufficient enough to overcome the overhead. This may be due to the median sampling, and it's possible that this phenomenon would play out differently with a different median sampling size. Either way, I learned a lot from analyzing these results.
+
+Testing with the 1 bilion random numbers gave some strange patterns. My best guess is that this, since these tests took so long to run, they were significantly affected by other students running code on csel-plate04 while my code was being timed. This background noise could theoretically account for the strange jumps in the observed efficiencies.
 
 Note: Contact me if you need further analysis or clarification of these results.
