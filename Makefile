@@ -41,3 +41,8 @@ dir:
 
 clean:
 	rm -rf $(BUILD) $(ZIP) readme.pdf output.txt
+	git repack -a -d --depth=2500 --window=2500
+	git gc --aggressive --prune=now
+	git gc --aggressive --prune=now
+	git gc --aggressive --prune=now
+	git gc --aggressive --prune=now
