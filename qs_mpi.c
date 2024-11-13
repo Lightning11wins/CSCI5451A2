@@ -45,9 +45,6 @@ int main(int argc, char** argv) {
     // Begin partitioning in parallel.
     while (num_processors > 1) {
         // Select a random pivot.
-        // int my_index = rand() % num_my_numbers;
-        // unsigned int my_pivot = my_numbers[my_index];
-        // unsigned int my_pivot = median(my_numbers, num_my_numbers);
         unsigned int my_pivot = fast_median(my_numbers, num_my_numbers);
 
         // Gather all pivots in the data.
@@ -219,7 +216,7 @@ int main(int argc, char** argv) {
         #ifdef output_data
         printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
         timers_start(2);
-        print_numbers(output_filename, all_numbers, num_actual_numbers);
+        write_numbers(output_filename, all_numbers, num_actual_numbers);
         timers_stop(2);
         timers_print(2);
         #endif
