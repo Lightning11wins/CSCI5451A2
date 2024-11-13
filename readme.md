@@ -22,7 +22,7 @@ I measured the process which took the longest time to complete sorting *and* par
 | 100M | 81.8201s  | 42.9335s | 21.3860s  | 10.9921s  | 5.7401s  | 4.0770s  | 2.5147s  |
 | 1B   | 986.7396s | 548.660s | 237.7989s | 117.4499s | 64.2602s | 41.9287s | 24.1742s |
 
-### Speedup Compared to 1P
+### Speedup Compared to 1 Processor (1P)
 | Size | 1P      | 2P      | 4P      | 8P      | 16P      | 32P      | 64P      |
 |------|---------|---------|---------|---------|----------|----------|----------|
 | 1M   | 1.0000x | 1.9595x | 3.2497x | 4.0273x | 6.1878x  | 9.1222x  | 12.8773x | 
