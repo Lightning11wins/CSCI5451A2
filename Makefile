@@ -22,7 +22,7 @@ verify:
 	gcc -O3 -Wall verify.c -o $(BUILD)/verify.o
 	./$(BUILD)/verify.o
 
-build: $(EXE_FAST)
+build: dir $(EXE_FAST)
 
 submission: $(ZIP)
 
