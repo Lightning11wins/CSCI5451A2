@@ -85,30 +85,34 @@ int main(int argc, char** argv) {
         fflush(stdout);
 
         // Determine how many my_numbers will be sent where.
-        // Yes, the below math is wrong because of integer devision. I corrected it with lost_small_numbers and lost_large_numbers.
-        // Yes, that's a bad way to correct it. I don't care. This took me several hours of painful debugging to find and fix.
         int num_small_numbers = i, num_large_numbers = num_my_numbers - num_small_numbers,
             half_num_processors = num_processors / 2,
             small_numbers_per_processor = num_small_numbers / half_num_processors,
-            large_numbers_per_processor = num_small_numbers / half_num_processors,
+            small_numbers_remaining = num_small_numbers % half_num_processors,
+            large_numbers_per_processor = num_large_numbers / half_num_processors,
+            large_numbers_remaining = num_large_numbers % half_num_processors,
             data_sent_per_processor[num_processors], p = 0,
-            data_sent_displacements[num_processors], displacement = 0,
-            lost_small_numbers = num_small_numbers - (small_numbers_per_processor * half_num_processors),
-            lost_large_numbers = num_large_numbers - (large_numbers_per_processor * half_num_processors);
+            data_sent_displacements[num_processors], displacement = 0;
+        for (; p < small_numbers_remaining; p++) {
+            data_sent_per_processor[p] = small_numbers_per_processor + 1;
+            data_sent_displacements[p] = displacement;
+            displacement += small_numbers_per_processor + 1;
+        }
         for (; p < half_num_processors; p++) {
             data_sent_per_processor[p] = small_numbers_per_processor;
             data_sent_displacements[p] = displacement;
             displacement += small_numbers_per_processor;
         }
-        data_sent_per_processor[p - 1] += lost_small_numbers;
-        displacement += lost_small_numbers;
+        for (; p < half_num_processors + large_numbers_remaining; p++) {
+            data_sent_per_processor[p] = large_numbers_per_processor + 1;
+            data_sent_displacements[p] = displacement;
+            displacement += large_numbers_per_processor + 1;
+        }
         for (; p < num_processors; p++) {
             data_sent_per_processor[p] = large_numbers_per_processor;
             data_sent_displacements[p] = displacement;
             displacement += large_numbers_per_processor;
         }
-        data_sent_per_processor[p - 1] += lost_large_numbers;
-        displacement += lost_large_numbers;
 
         // Logging
         char data_sent_per_processor_buff[1024] = {0}, data_sent_displacements_buff[1024] = {0};
@@ -158,7 +162,7 @@ int main(int argc, char** argv) {
         // Debug logging.
         char filename[32] = {0};
         snprintf(filename, sizeof(filename), "dumps/dump_%ld.txt", time(NULL));
-        dump(my_numbers, filename, num_my_numbers);
+        // dump(my_numbers, filename, num_my_numbers);
         findMinMax(my_numbers, num_my_numbers, &min, &max);
         printf("Process %d: Recieved new data (%u..%u) %d, dumped to %s.\n", my_rank, min / x, max / x, num_my_numbers, filename);
         fflush(stdout);
@@ -253,7 +257,7 @@ int main(int argc, char** argv) {
             previous = current;
         }
         if (is_sorted == 1) {
-            printf("Success! Output data is sorted in ascending order.");
+            printf("Success! Output data is sorted in ascending order.\n");
         }
         
         // Output the data.
