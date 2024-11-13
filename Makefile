@@ -18,6 +18,9 @@ ASM = qs.s
 run: $(EXE_FAST)
 	mpirun -np $(PROCESSORS) $(HOSTFILE) ./$(EXE_FAST) $(PARAMS)
 
+debug: $(EXE_DEBUG)
+	mpirun -np $(PROCESSORS) $(HOSTFILE) ./$(EXE_DEBUG) $(PARAMS)
+
 verify:
 	gcc -O3 -Wall verify.c -o $(BUILD)/verify.o
 	./$(BUILD)/verify.o
@@ -30,7 +33,7 @@ $(EXE_FAST): $(SRC) $(DEP)
 	$(CC) -O3 -march=native -Wall $(SRC) -o $(EXE_FAST)
 
 $(EXE_DEBUG): $(SRC) $(DEP)
-	$(CC) -g -Wall $(SRC) -o $(EXE_DEBUG)
+	$(CC) -O0 -g -Wall $(SRC) -o $(EXE_DEBUG)
 
 $(ZIP): clean
 	pandoc readme.md -o readme.pdf
