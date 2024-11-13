@@ -27,6 +27,9 @@ int main(int argc, char** argv) {
     }
 
     // Generate random numbers to sort.
+    // Note: It appears that rank 0 and rank 1 may give identical random numbers.
+    // Adding one to the rank fixed this, so I just left it at that, although I'm
+    // not entirely why I had this issue in the first place.
     srand(my_rank + 1);
     unsigned int* my_numbers = (unsigned int*) malloc(num_my_numbers * sizeof(unsigned int));
     for (int i = 0; i < num_my_numbers; i++) {
@@ -38,6 +41,12 @@ int main(int argc, char** argv) {
 
     // Begin partitioning in parallel.
     while (num_processors > 1) {
+        // Debug logging.
+        unsigned int min = -1, max = -1, x = 1000000;
+        findMinMax(my_numbers, num_my_numbers, &min, &max);
+        printf("Process %d: Selecting pivot for data (%u..%u) %d.\n", my_rank, min / x, max / x, num_my_numbers);
+        fflush(stdout);
+
         // Select a random pivot.
         int my_index = rand() % num_my_numbers;
         unsigned int my_pivot = my_numbers[my_index];
@@ -66,28 +75,40 @@ int main(int argc, char** argv) {
             }
         }
 
-        unsigned int min1 = -1, max1 = -1, min2 = -1, max2 = -1, x = 1000000;
+        unsigned int min1 = -1, max1 = -1, min2 = -1, max2 = -1;
         findMinMax(my_numbers, i, &min1, &max1);
         findMinMax(my_numbers + i, num_my_numbers - i, &min2, &max2);
-        printf("Process %d: Partitioned into %u..%u < %u..%u.\n", my_rank, min1 / x, max1 / x, min2 / x, max2 / x);
+        printf(
+            "Process %d: Partitioned into %u..%u (x%d) < %u..%u (x%d).\n",
+            my_rank, min1 / x, max1 / x, i, min2 / x, max2 / x, num_my_numbers - i
+        );
         fflush(stdout);
 
         // Determine how many my_numbers will be sent where.
-        int half_num_processors = num_processors / 2,
-            small_numbers_per_processor = i / half_num_processors,
-            large_numbers_per_processor = (num_my_numbers - i) / half_num_processors,
+        // Yes, the below math is wrong because of integer devision. I corrected it with lost_small_numbers and lost_large_numbers.
+        // Yes, that's a bad way to correct it. I don't care. This took me several hours of painful debugging to find and fix.
+        int num_small_numbers = i, num_large_numbers = num_my_numbers - num_small_numbers,
+            half_num_processors = num_processors / 2,
+            small_numbers_per_processor = num_small_numbers / half_num_processors,
+            large_numbers_per_processor = num_small_numbers / half_num_processors,
             data_sent_per_processor[num_processors], p = 0,
-            data_sent_displacements[num_processors], displacement = 0;
+            data_sent_displacements[num_processors], displacement = 0,
+            lost_small_numbers = num_small_numbers - (small_numbers_per_processor * half_num_processors),
+            lost_large_numbers = num_large_numbers - (large_numbers_per_processor * half_num_processors);
         for (; p < half_num_processors; p++) {
             data_sent_per_processor[p] = small_numbers_per_processor;
             data_sent_displacements[p] = displacement;
             displacement += small_numbers_per_processor;
         }
+        data_sent_per_processor[p - 1] += lost_small_numbers;
+        displacement += lost_small_numbers;
         for (; p < num_processors; p++) {
             data_sent_per_processor[p] = large_numbers_per_processor;
             data_sent_displacements[p] = displacement;
             displacement += large_numbers_per_processor;
         }
+        data_sent_per_processor[p - 1] += lost_large_numbers;
+        displacement += lost_large_numbers;
 
         // Logging
         char data_sent_per_processor_buff[1024] = {0}, data_sent_displacements_buff[1024] = {0};
@@ -130,14 +151,17 @@ int main(int argc, char** argv) {
             comm
         );
 
-        unsigned int min = -1, max = -1;
-        findMinMax(new_numbers, num_my_numbers, &min, &max);
-        printf("Process %d: Recieved new data (%u..%u) %d.\n", my_rank, min1 / x, max1 / x, num_my_numbers);
-        fflush(stdout);
-
         // Continue partitioning with the new numbers.
         free(my_numbers);
         my_numbers = new_numbers;
+
+        // Debug logging.
+        char filename[32] = {0};
+        snprintf(filename, sizeof(filename), "dumps/dump_%ld.txt", time(NULL));
+        dump(my_numbers, filename, num_my_numbers);
+        findMinMax(my_numbers, num_my_numbers, &min, &max);
+        printf("Process %d: Recieved new data (%u..%u) %d, dumped to %s.\n", my_rank, min / x, max / x, num_my_numbers, filename);
+        fflush(stdout);
 
         // Note: We assume that, since we're partitioning a large amount of random data, the smaller and larger portions
         // will be roughly equal. Synchronizing across all the processors to determine an optimal distribution is expensive
@@ -156,7 +180,7 @@ int main(int argc, char** argv) {
 
         // Update the size of this processor group.
         MPI_Comm_size(comm, &num_processors);
-        printf("Process %d: New size: %d.\n", my_rank, num_processors);
+        printf("Process %d: New size %d, my color %d.\n", my_rank, num_processors, color);
         fflush(stdout);
     }
 

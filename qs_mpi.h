@@ -70,6 +70,24 @@ static inline void findMinMax(unsigned int numbers[], size_t size, unsigned int*
     }
 }
 
+// Dump numbers. (For debugging)
+// Was initially written by ChatGPT and revised by me, which is why it's kind of trash.
+void dump(const unsigned int* numbers, char* filename, size_t size) {
+    // Open the file for writing.
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Failed to open file");
+        return;
+    }
+
+    // Write each unsigned int in the numbers to the file.
+    for (size_t i = 0; i < size; i++) {
+        fprintf(file, "%u\n", numbers[i]);
+    }
+
+    fclose(file);
+}
+
 
 /**
 * @brief Write an array of integers to a file.

@@ -1,6 +1,6 @@
 N = 1000
 PARAMS = $(N)
-PROCESSORS = 4 # Max: 1772
+PROCESSORS = 16 # Max: 1772
 
 CC = mpicc
 SRC = qs_mpi.c
