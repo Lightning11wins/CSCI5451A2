@@ -6,6 +6,11 @@ In order to produce these chunks *in parallel*, we first agree on a pivot and th
 
 Once the data is partitioned, we simply call `qsort()` to sort the data. Then, the processors send their sorted data (`MPI_Gatherv()`) to a gathering processor (specified in `qs_mpi.h1` as `gatherer_rank`, which is `0` by default) which is in charge of collecting and writing the data to disk.
 
+### Median Calculation
+To calculate the median, this program uses a helper function from `median.h` called `fast_median()`. This basically works by taking the median of only the first `8192` numbers in the data. We assume this is a representative sample because the data is randomly distributed. Note that this would cause issues if the data were *not* randomly distributed. However, taking the median of the entire set of data only requires about 20% longer. Since `fast_median()` still needs to calculate a median, we use a linear-time algorithm from geeksforgeeks.org, which is cited in `medians.h`. Prior to this implementation, `fast_median()` used `slow_median()`, which is a nieve median implementation that sorts the data and takes the middle element. As it turns out, this only slowed down the program by around 4-5%, likely because the size of the input data was only `8192`. Using `slow_median()` directly, instead of inside `fast_median()` slows down the program by closer to 120%.
+
+**tl;dr** This implementation partitions using `fast_median()` which calls `median()` (linear time) on a representative sample of the data.
+
 ## Timing
 ### OpenMP
 | Clusters  | 1 Thread   | 2 Threads | 4 Threads | 8 Threads | 16 Threads |
