@@ -1,6 +1,6 @@
-N = 10000
+N = 100000000
 PARAMS = $(N)
-PROCESSORS = 64 # Max: 1772
+PROCESSORS = 16 # Max: 1772
 
 CC = mpicc
 SRC = qs_mpi.c
@@ -26,10 +26,10 @@ build: $(EXE_FAST)
 
 submission: $(ZIP)
 
-$(EXE_FAST): dir $(SRC) $(DEP)
+$(EXE_FAST): $(SRC) $(DEP)
 	$(CC) -O3 -march=native -Wall $(SRC) -o $(EXE_FAST)
 
-$(EXE_DEBUG): dir $(SRC) $(DEP)
+$(EXE_DEBUG): $(SRC) $(DEP)
 	$(CC) -g -Wall $(SRC) -o $(EXE_DEBUG)
 
 $(ZIP): clean

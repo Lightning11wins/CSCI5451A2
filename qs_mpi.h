@@ -18,15 +18,11 @@
 #define output_filename "../output.txt"
 
 #define parse_int(str) ((int) strtol((str), (char**) NULL, 10))
-#define start_timer() const double start_time = MPI_Wtime()
-#define stop_timer() const double stop_time = MPI_Wtime()
-#define duration(start_time, stop_time) ((stop_time) - (start_time))
-#define print_timer() print_time(duration(start_time, stop_time))
+#define timer_start() const double start_time = MPI_Wtime()
+#define timer_stop() const double end_time = MPI_Wtime(), total_time = end_time - start_time
+#define timer_print() print_time(total_time)
 #define print_time(seconds) printf("Process %d: Complted after %0.04fs\n", my_rank, seconds)
-
-#define begin() MPI_Init(&argc, &argv); start_timer();
 #define terminate() MPI_Finalize(); return 0;
-#define end() stop_timer(); print_timer(); terminate();
 
 #define swap(arr, i, j) \
     unsigned int temp = arr[i];  \

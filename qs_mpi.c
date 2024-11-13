@@ -37,21 +37,13 @@ int main(int argc, char** argv) {
     }
 
     // Begin timing the algorithm.
-    start_timer();
+    timer_start();
 
     // Begin partitioning in parallel.
     while (num_processors > 1) {
-        // Debug logging.
-        unsigned int min = -1, max = -1, x = 1000000;
-        findMinMax(my_numbers, num_my_numbers, &min, &max);
-        printf("Process %d: Selecting pivot for data (%u..%u) %d.\n", my_rank, min / x, max / x, num_my_numbers);
-        fflush(stdout);
-
         // Select a random pivot.
         int my_index = rand() % num_my_numbers;
         unsigned int my_pivot = my_numbers[my_index];
-        printf("Process %d: Picked my pivot my_numbers[%d] = %d.\n", my_rank, my_index, my_pivot);
-        fflush(stdout);
 
         // Gather all pivots in the data.
         unsigned int pivots[num_processors];
@@ -59,8 +51,6 @@ int main(int argc, char** argv) {
 
         // Pick the pivot.
         unsigned int pivot = median(pivots, num_processors);
-        printf("Process %d: Global pivot is %d.\n", my_rank, pivot);
-        fflush(stdout);
 
         // Partition data around the pivot.
         // Contract: Numbers before i are smaller than the pivot.
@@ -74,15 +64,6 @@ int main(int argc, char** argv) {
                 i++;
             }
         }
-
-        unsigned int min1 = -1, max1 = -1, min2 = -1, max2 = -1;
-        findMinMax(my_numbers, i, &min1, &max1);
-        findMinMax(my_numbers + i, num_my_numbers - i, &min2, &max2);
-        printf(
-            "Process %d: Partitioned into %u..%u (x%d) < %u..%u (x%d).\n",
-            my_rank, min1 / x, max1 / x, i, min2 / x, max2 / x, num_my_numbers - i
-        );
-        fflush(stdout);
 
         // Determine how many my_numbers will be sent where.
         int num_small_numbers = i, num_large_numbers = num_my_numbers - num_small_numbers,
@@ -114,14 +95,6 @@ int main(int argc, char** argv) {
             displacement += large_numbers_per_processor;
         }
 
-        // Logging
-        char data_sent_per_processor_buff[1024] = {0}, data_sent_displacements_buff[1024] = {0};
-        stringify_array(data_sent_per_processor, num_processors, data_sent_per_processor_buff);
-        stringify_array(data_sent_displacements, num_processors, data_sent_displacements_buff);
-        printf("Process %d: Sending data x%s with displacements %s.\n",
-            my_rank, data_sent_per_processor_buff, data_sent_displacements_buff);
-        fflush(stdout);
-
         // Comunicate the amount of data each processor will send.
         int data_recv_per_processor[num_processors];
         MPI_Alltoall(data_sent_per_processor, 1, MPI_UNSIGNED, data_recv_per_processor, 1, MPI_UNSIGNED, comm);
@@ -132,14 +105,6 @@ int main(int argc, char** argv) {
             data_recv_displacements[p] = displacement;
             displacement += data_recv_per_processor[p];
         }
-
-        // Debug logging.
-        char data_recv_per_processor_buff[1024] = {0}, data_recv_displacements_buff[1024] = {0};
-        stringify_array(data_recv_per_processor, num_processors, data_recv_per_processor_buff);
-        stringify_array(data_recv_displacements, num_processors, data_recv_displacements_buff);
-        printf("Process %d: Recieving data x%s with displacements %s.\n",
-            my_rank, data_recv_per_processor_buff, data_recv_displacements_buff);
-        fflush(stdout);
 
         // Displacement is the amount of data we will recv.
         num_my_numbers = displacement;
@@ -159,14 +124,6 @@ int main(int argc, char** argv) {
         free(my_numbers);
         my_numbers = new_numbers;
 
-        // Debug logging.
-        char filename[32] = {0};
-        snprintf(filename, sizeof(filename), "dumps/dump_%ld.txt", time(NULL));
-        // dump(my_numbers, filename, num_my_numbers);
-        findMinMax(my_numbers, num_my_numbers, &min, &max);
-        printf("Process %d: Recieved new data (%u..%u) %d, dumped to %s.\n", my_rank, min / x, max / x, num_my_numbers, filename);
-        fflush(stdout);
-
         // Note: We assume that, since we're partitioning a large amount of random data, the smaller and larger portions
         // will be roughly equal. Synchronizing across all the processors to determine an optimal distribution is expensive
         // and will probably create a 50%/50% split (or something close to it) in most situations, so we simply assume 50%/50%.
@@ -184,16 +141,11 @@ int main(int argc, char** argv) {
 
         // Update the size of this processor group.
         MPI_Comm_size(comm, &num_processors);
-        printf("Process %d: New size %d, my color %d.\n", my_rank, num_processors, color);
-        fflush(stdout);
     }
 
     // Sort the data.
+    printf("Processor %d: Sorting %d numbers.\n", my_rank, num_my_numbers);
     qsort(my_numbers, num_my_numbers, sizeof(unsigned int), compare);
-    printf(
-        "Processor %d: Finished sorting %d numbers (%d..%d).\n",
-        my_rank, num_my_numbers, my_numbers[0], my_numbers[num_my_numbers - 1]
-    );
 
     // Refresh the world communicator to include everyone again.
     MPI_Comm_dup(MPI_COMM_WORLD, &comm);
@@ -208,13 +160,6 @@ int main(int argc, char** argv) {
     int num_actual_numbers = 0;
     for (int i = 0; i < num_processors; i++) {
         num_actual_numbers += num_recv_numbers[i];
-        
-        if (my_rank == gatherer_rank) {
-            printf("Process %d: Gathering %d sorted numbers from %d.\n", my_rank, num_recv_numbers[i], i);
-        }
-    }
-    if (my_rank == gatherer_rank) {
-        printf("Process %d: Total numbers to gather: %d.\n", my_rank, num_actual_numbers);
     }
 
     // Allocate space for the sorted.
@@ -239,8 +184,8 @@ int main(int argc, char** argv) {
     );
 
     // Algorithm is done, that's time!
-    stop_timer();
-    print_timer();
+    timer_stop();
+    timer_print();
 
     // Free each process's my_numbers.
     free(my_numbers);
@@ -262,7 +207,10 @@ int main(int argc, char** argv) {
         
         // Output the data.
         printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
+        timer_start();
         print_numbers(output_filename, all_numbers, num_actual_numbers);
+        timer_stop();
+        timer_print();
     }
 
     // Stop and print the timer, then end and clean up the program.
