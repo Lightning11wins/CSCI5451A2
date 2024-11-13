@@ -146,7 +146,6 @@ int main(int argc, char** argv) {
     }
 
     // Sort the data.
-    printf("Processor %d: Sorting %d numbers.\n", my_rank, num_my_numbers);
     timers_start(1);
     qsort(my_numbers, num_my_numbers, sizeof(unsigned int), compare);
     timers_stop(1);

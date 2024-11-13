@@ -12,20 +12,22 @@ To calculate the median, this program uses a helper function from `median.h` cal
 **tl;dr** This implementation partitions using `fast_median()` which calls `median()` (linear time) on a representative sample of the data.
 
 ## Timing
-### OpenMP
-| Clusters  | 1 Thread   | 2 Threads | 4 Threads | 8 Threads | 16 Threads |
-|-----------|------------|-----------|-----------|-----------|------------|
-| 256       | 1373.5732s | 686.3298s | 345.2970s | 172.2829s | 87.0074s   |
-| 512       | 370.8213s  | 190.0222s | 95.6559s  | 48.9559s  | 23.8680s   |
-| 1024      | 339.7752s  | 178.3820s | 88.7130s  | 44.3847s  | 22.7710s   |
+I measured the process which took the longest time to complete sorting *and* partitioning of the data. The load balancing was decent. Improving the sampling size for medians to determine the pivot made it significantly better, however, that also slowed down median calculation. I picked a sample size of `8192` numbers, as mentioned above, because it seemed to give the best results.
 
-### pthreads
-| Clusters  | 1 Thread  | 2 Threads | 4 Threads | 8 Threads | 16 Threads |
-|-----------|-----------|-----------|-----------|-----------|------------|
-| 256       | Too long* | 684.3861s | 351.9231s | 188.6727s | 98.4924s   |
-| 512       | 374.6625s | 191.3310s | 97.6285s  | 49.0085s  | 25.2256s   |
-| 1024      | 342.8823s | 171.9045s | 89.2886s  | 45.1169s  | 22.8688s   |
+### Time in Seconds
+| Size | 1 Processor | 2 Processors | 4 Processors | 8 Processors | 16 Processors |
+|------|-------------|--------------|--------------|--------------|---------------|
+| 1M   | 0.6194s     | 0.3161s      | 0.1906s      | 0.1538s      | 0.1001s       |
+| 10M  | 7.2316s     | 3.6825s      | 1.8815s      | 0.9511s      | 0.7116s       |
+| 100M | 81.8201s    | 42.9335s     | 21.3860s     | 10.9921s     | 5.7401s       |
 
-*This took too long to be properly tested. I can make the educated guess that it'd take around 1373.5732s, though.
+### Speedup Compared to 1 Processor
+| Size | 1 Processor | 2 Processors | 4 Processors | 8 Processors | 16 Processors |
+|------|-------------|--------------|--------------|--------------|---------------|
+| 1M   | 1.0000x     | 1.9595x      | 3.2497x      | 4.0273x      | 6.1878x       |
+| 10M  | 1.0000x     | 1.9638x      | 3.8435x      | 7.6034x      | 10.1625x      |
+| 100M | 1.0000x     | 1.9057x      | 3.8259x      | 7.4435x      | 14.2541x      |
 
-Note: Reach out to me if you'd like more analysis or clarification of these results
+As you can see, the efficency of this code really starts to drop off with larger numbers of processors, unless the size of the data is sufficent enough to overcome the overhead. This may be due to the median sampling, and it's possible that this phenominion would play out differently with a different median sampling size. Either way, I learned a lot from analizing these results.
+
+Note: Reach out to me if you need further analysis or clarification of these results.
