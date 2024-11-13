@@ -2,6 +2,7 @@
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
+    timers_init(3);
 
     // Get a fresh comunicator for our process.
     MPI_Comm comm;
@@ -38,13 +39,14 @@ int main(int argc, char** argv) {
     }
 
     // Begin timing the algorithm.
-    timer_start();
+    timers_start(0);
 
     // Begin partitioning in parallel.
     while (num_processors > 1) {
         // Select a random pivot.
         int my_index = rand() % num_my_numbers;
         unsigned int my_pivot = my_numbers[my_index];
+        // unsigned int my_pivot = median(my_numbers, num_my_numbers);
 
         // Gather all pivots in the data.
         unsigned int pivots[num_processors];
@@ -146,7 +148,10 @@ int main(int argc, char** argv) {
 
     // Sort the data.
     printf("Processor %d: Sorting %d numbers.\n", my_rank, num_my_numbers);
+    timers_start(1);
     qsort(my_numbers, num_my_numbers, sizeof(unsigned int), compare);
+    timers_stop(1);
+    timers_print(1);
 
     // Refresh the world communicator to include everyone again.
     comm = comm_all;
@@ -185,8 +190,8 @@ int main(int argc, char** argv) {
     );
 
     // Algorithm is done, that's time!
-    timer_stop();
-    timer_print();
+    timers_stop(0);
+    timers_print(0);
 
     // Free each process's my_numbers.
     free(my_numbers);
@@ -209,11 +214,13 @@ int main(int argc, char** argv) {
         #endif
         
         // Output the data.
+        #ifdef output_data
         printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
-        timer_start();
+        timers_start(2);
         print_numbers(output_filename, all_numbers, num_actual_numbers);
-        timer_stop();
-        timer_print();
+        timers_stop(2);
+        timers_print(2);
+        #endif
     }
 
     // Stop and print the timer, then end and clean up the program.
