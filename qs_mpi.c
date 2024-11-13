@@ -6,6 +6,7 @@ int main(int argc, char** argv) {
     // Get a fresh comunicator for our process.
     MPI_Comm comm;
     MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+    MPI_Comm comm_all = comm;
 
     // Get values from MPI.
     int num_processors, my_rank;
@@ -148,7 +149,7 @@ int main(int argc, char** argv) {
     qsort(my_numbers, num_my_numbers, sizeof(unsigned int), compare);
 
     // Refresh the world communicator to include everyone again.
-    MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+    comm = comm_all;
     MPI_Comm_size(comm, &num_processors);
 
     // Determine how many my_numbers to gather.
