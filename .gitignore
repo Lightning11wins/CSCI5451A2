@@ -1,5 +1,6 @@
+# Ignore generated data
 build
-dumps
-readme.pdf
+fulle637
 fulle637.tar.gz
 output.txt
+readme.pdf

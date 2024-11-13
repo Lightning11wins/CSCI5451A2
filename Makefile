@@ -6,6 +6,7 @@ CC = mpicc
 SRC = qs_mpi.c
 DEP = qs_mpi.h
 ZIP = fulle637.tar.gz
+SUBMISSION_DIR = fulle637
 HOSTFILE = # -hostfile hostfile.txt
 
 BUILD = build
@@ -14,6 +15,8 @@ EXE_DEBUG = $(BUILD)/qs_debug.o
 ASM = qs.s
 
 .PHONY: all clean dir run submission test
+
+all: build
 
 run: $(EXE_FAST)
 	mpirun -np $(PROCESSORS) $(HOSTFILE) ./$(EXE_FAST) $(PARAMS)
@@ -36,14 +39,16 @@ $(EXE_DEBUG): $(SRC) $(DEP)
 	$(CC) -O0 -g -Wall $(SRC) -o $(EXE_DEBUG)
 
 $(ZIP): clean
-	pandoc readme.md -o readme.pdf
-	tar --exclude='.gitignore' --exclude='$(BUILD)' -czvf $(ZIP) *
+	mkdir -p $(SUBMISSION_DIR)
+	pandoc readme.md -o $(SUBMISSION_DIR)/readme.pdf
+	find . -maxdepth 1 -type f ! -name '.gitignore' ! -name 'hosts.txt' ! -name 'hostfile.txt' -exec cp {} $(SUBMISSION_DIR)/ \;
+	tar -czvf $(ZIP) $(SUBMISSION_DIR)
 
 dir:
 	mkdir -p $(BUILD)
 
 clean:
-	rm -rf $(BUILD) $(ZIP) readme.pdf output.txt
+	rm -rf $(BUILD) $(SUBMISSION_DIR) $(ZIP) readme.pdf output.txt
 	git repack -a -d --depth=2500 --window=2500
 	git gc --aggressive --prune=now
 	git gc --aggressive --prune=now

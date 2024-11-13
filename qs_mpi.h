@@ -7,16 +7,16 @@
 #include <string.h>
 
 #define gatherer_rank 0
-#define output_filename "../output.txt"
-#define verify_sorted
-// #define output_data
+#define output_filename "output.txt"
+// #define verify_sorted
+#define output_data
 
 #define parse_int(str) ((int) strtol((str), (char**) NULL, 10))
 #define timers_init(num_timers) double start_times[num_timers] = {0}, end_times[num_timers] = {0}, total_times[num_timers] = {0};
 #define timers_start(timer_id) start_times[timer_id] = MPI_Wtime()
 #define timers_stop(timer_id) end_times[timer_id] = MPI_Wtime(); \
     total_times[timer_id] = end_times[timer_id] - start_times[timer_id]
-#define timers_print(timer_id) printf("Process %d: Timer %d ended after %0.04fs\n", my_rank, timer_id, total_times[timer_id])
+#define timers_print(timer_id) // printf("Process %d: Timer %d ended after %0.04fs\n", my_rank, timer_id, total_times[timer_id])
 #define terminate() MPI_Finalize(); return 0;
 
 #define swap(arr, i, j)         \

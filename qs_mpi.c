@@ -213,7 +213,6 @@ int main(int argc, char** argv) {
         
         // Output the data.
         #ifdef output_data
-        printf("Writing %d sorted numbers to disk.\n", num_actual_numbers);
         timers_start(2);
         write_numbers(output_filename, all_numbers, num_actual_numbers);
         timers_stop(2);
