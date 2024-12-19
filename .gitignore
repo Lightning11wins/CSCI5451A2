@@ -1,5 +1,6 @@
 # Ignore generated data
 build
+qs_mpi
 fulle637
 fulle637.tar.gz
 output.txt

@@ -1,6 +1,6 @@
-N = 100000000
-PARAMS = $(N)
-PROCESSORS = 64 # Max: 1772
+N = 1000000
+PARAMS = $(N) "output.txt"
+PROCESSORS = 16 # Max: 1772
 
 CC = mpicc
 SRC = qs_mpi.c
@@ -12,11 +12,12 @@ HOSTFILE = # -hostfile hostfile.txt
 BUILD = build
 EXE_FAST = $(BUILD)/qs_fast.o
 EXE_DEBUG = $(BUILD)/qs_debug.o
+EXE = qs_mpi
 ASM = qs.s
 
 .PHONY: all clean dir run submission test
 
-all: build
+build: $(EXE)
 
 run: $(EXE_FAST)
 	mpirun -np $(PROCESSORS) $(HOSTFILE) ./$(EXE_FAST) $(PARAMS)
@@ -28,15 +29,19 @@ verify:
 	gcc -O3 -Wall verify.c -o $(BUILD)/verify.o
 	./$(BUILD)/verify.o
 
-build: dir $(EXE_FAST)
-
 submission: $(ZIP)
 
-$(EXE_FAST): $(SRC) $(DEP)
+$(EXE_FAST): $(SRC) $(DEP) dir
 	$(CC) -O3 -march=native -Wall $(SRC) -o $(EXE_FAST)
 
-$(EXE_DEBUG): $(SRC) $(DEP)
+$(EXE_DEBUG): $(SRC) $(DEP) dir
 	$(CC) -O0 -g -Wall $(SRC) -o $(EXE_DEBUG)
+
+$(EXE): $(SRC) $(DEP)
+	$(CC) -O3 -march=native -Wall $(SRC) -o $(EXE)
+
+dir:
+	mkdir -p $(BUILD)
 
 $(ZIP): clean
 	mkdir -p $(SUBMISSION_DIR)
@@ -44,13 +49,7 @@ $(ZIP): clean
 	find . -maxdepth 1 -type f ! -name '.gitignore' ! -name 'hosts.txt' ! -name 'hostfile.txt' -exec cp {} $(SUBMISSION_DIR)/ \;
 	tar -czvf $(ZIP) $(SUBMISSION_DIR)
 
-dir:
-	mkdir -p $(BUILD)
-
 clean:
-	rm -rf $(BUILD) $(SUBMISSION_DIR) $(ZIP) readme.pdf output.txt
+	rm -rf $(BUILD) $(SUBMISSION_DIR) $(ZIP) $(EXE) readme.pdf output.txt
 	git repack -a -d --depth=2500 --window=2500
-	git gc --aggressive --prune=now
-	git gc --aggressive --prune=now
-	git gc --aggressive --prune=now
 	git gc --aggressive --prune=now

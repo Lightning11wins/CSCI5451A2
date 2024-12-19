@@ -17,12 +17,13 @@ int main(int argc, char** argv) {
 
     // Check for argument issues.
     if (argc <= 1) {
-        printf("Usage: ./quicksort <N>\n");
+        printf("Usage: ./%s <N> <output_filename>\n", argv[0]);
         terminate();
     }
     
     // Parse arguments.
     int target_total_numbers = parse_int(argv[1]);
+    char* output_filename = argv[2];
     int num_my_numbers = target_total_numbers / num_processors;
 
     if (target_total_numbers % num_processors != 0) {

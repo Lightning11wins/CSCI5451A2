@@ -14,6 +14,12 @@ To calculate the median, this program uses a helper function from `median.h` cal
 ## Timing
 I measured the process which took the longest time to complete sorting *and* partitioning of the data. The load balancing was decent. Improving the sampling size for medians to determine the pivot made it significantly better, however, that also slowed down median calculation. I picked a sample size of `8192` numbers, as mentioned above because it seemed to give the best results.
 
+### Timer Numbers
+This code uses multiple timers. For clarity, a summary of what they mean has been included below:
+- Timer 0: Time to complete the entire algorithm, including partitioning, sorting, and merging. (Shown below)
+- Timer 1: Time to complete just the sorting by calling qsort().
+- Timer 2: Time to complete writing the output data to the file.
+
 ### Time in Seconds
 | Size | 1P        | 2P       | 4P        | 8P        | 16P      | 32P      | 64P      |
 |------|-----------|----------|-----------|-----------|----------|----------|----------|
